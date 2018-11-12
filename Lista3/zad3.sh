@@ -3,5 +3,5 @@ str=$(curl -s --request GET  --url 'https://api.thecatapi.com/v1/images/search?f
 echo $str
 wget -q $str
 img2txt -f utf8 -W 150 "${str##*/}"
-curl -s -get http://api.icndb.com/jokes/random/ | jq '.value.joke'
+curl -s -get http://api.icndb.com/jokes/random/ | jq '.value.joke' | sed 's/&quot;/\"/g'
 rm "${str##*/}" 
