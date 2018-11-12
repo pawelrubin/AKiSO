@@ -27,6 +27,7 @@ while(sleep $interval); do
    	else
 		git commit -am "zmiana" 
 		echo "zmiana"
+		zenity --info --text "$(echo -e "Zmiana na stronie\n$url")"
 	fi
 
 	mv tmp site
