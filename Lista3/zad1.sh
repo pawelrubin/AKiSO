@@ -12,7 +12,6 @@ barWidth=$3
 width=$(echo "$1 - ($1%($barWidth+1)) + 1" | bc)
 widthGraph=$(echo "$1/($barWidth+1)" | bc)
 
-
 downloadColor=$(tput setaf 6)
 uploadColor=$(tput setaf 5)
 normal=$(tput sgr0)
@@ -35,15 +34,16 @@ maxDownload=${downloadArray[0]}
 maxUpload=${uploadArray[0]}
 
 downloadScale=0
-uploadScale="0"
+uploadScale=0
 
 numOfDev=$(ls /sys/class/net | wc -w)
 
-download="0"
-upload="0"
-avgDownload="0"
-avgUpload="0"
-counter="0"
+download=0
+upload=0
+avgDownload=0
+avgUpload=0
+counterDownload=0
+counterUpload=0
 uptime=""
 battery=""
 loadAvg=""
@@ -53,8 +53,10 @@ loadAvg=""
 trap ctrl_c INT
 stty -ctlecho
 
+# this is executed after pressing ctr+c
 function ctrl_c() {
-	for i in $(seq 1 $(echo "14 + $height * 2" | bc)); do
+	temp=$(echo "16 + $height * 2" | bc)
+	for (( i=0; i<$temp; i++ )); do
 		echo ""
 	done
 
@@ -63,6 +65,7 @@ function ctrl_c() {
 	exit
 }
 
+# calculating current download and upload speed
 function calculateSpeed {
 	rec1=0
 	t1=0
@@ -90,45 +93,51 @@ function calculateSpeed {
 	upload=$(($t2-$t1))
 }
 
+# function returns new average value 
 function calculateNewAvg {
-	avg=$1	
-	value=$2
+	local avg=$1	
+	local value=$2
+	local counter=$3
 
 	newAvg=$(echo "$avg + ($value - $avg)/$counter" | bc)
 
 	echo "$newAvg"
 }
 
+# calculating average download and upload speed
 function calculateAvgSpeed {
-	# erase literals (B, KB, ...)
-	avgDownload=${avgDownload//[!0-9]/}
-	avgUpload=${avgUpload//[!0-9]/}
+	if (( $download > 0 )); then
+		counterDownload=$(($counterDownload+1))
+		avgDownload=$(calculateNewAvg "$avgDownload" "$download" "$counterDownload")
+	fi
 
-	if [ $download -gt 0 ]; then
-		counter=$(($counter+1))
-		avgDownload=$(calculateNewAvg "$avgDownload" "$download")
-		avgUpload=$(calculateNewAvg "$avgUpload" "$upload")
+	if (( $upload > 0 )); then
+		counterUpload=$(($counterUpload+1))
+		avgUpload=$(calculateNewAvg "$avgUpload" "$upload" "$counterUpload")
 	fi
 }
 
-function uptimeAndBattery {
+# getting info about uptime, battery and loadavg
+function uptimeBatteryLoadAvg {
 	uptime=$(awk '{print $1}' /proc/uptime)
-	loadAvg=$(cat /proc/loadavg)
 	if [ -f /sys/class/power_supply/BAT0/uevent ]; then
-		battery="$(echo $(cat /sys/class/power_supply/BAT0/uevent | grep -o "POWER_SUPPLY_CAPACITY=.*" | cut -d"=" -f2))"
+		battery=$(cat /sys/class/power_supply/BAT0/uevent | grep -o "POWER_SUPPLY_CAPACITY=.*" | cut -d"=" -f2)
 	fi
+	loadAvg=$(cat /proc/loadavg)
 }
 
+# recursive function for changing units
 function format {
-	formats=(B KB MB GB)
+	units=(B KB MB GB)
 	i=$2
-	if [ "${1%.*}" -lt 1000 ]; then
-		echo "$1 ${formats[$i]}"
+	if (( ${1%.*} < 1000 )); then # ${1%.*} - erasing decimal fraction
+		echo "$1 ${units[$i]}"
 	else 
 		format "$(echo "scale=2;$1/1000" | bc)" "$(($2+1))"
 	fi
 }
 
+# printing info
 function printOnScreen {
 	sec=${uptime%.*}
 	min=$(echo "($sec/60.0)%60" | bc)
@@ -151,31 +160,35 @@ function printOnScreen {
 # $1 - array, $2 - value to append
 function arrayShiftAppend {
 	local -n arr=$1
-	for (( i=0; i<${#arr[@]}; i++ )); do
+	local arrSize=${#arr[@]}
+
+	for (( i=0; i<$arrSize; i++ )); do
         arr[$i]=${arr[(($i+1))]}
     done
-    arr[-1]=$2
+    
+	arr[-1]=$2
 }
 
 function calculateMax {
 	maxDownload=${downloadArray[0]}
 	maxUpload=${uploadArray[0]}
-	for n in $(seq "${#downloadArray[@]}"); do
-        if [[ "${downloadArray[n]}" -gt "$maxDownload" ]]; then
-            maxDownload=${downloadArray[n]}
+
+	for (( i=1; i<${#downloadArray[@]}; i++ )); do
+		if (( ${downloadArray[$i]} > $maxDownload )); then
+            maxDownload=${downloadArray[$i]}
         fi
-		if [[ "${uploadArray[n]}" -gt "$maxUpload" ]]; then
-            maxUpload=${uploadArray[n]}
+		
+		if (( ${uploadArray[$i]} > $maxUpload )); then
+            maxUpload=${uploadArray[$i]}
         fi
 	
-	if (( $maxDownload > $globalDownMax )); then
-		globalDownMax=$maxDownload
-	fi
+		if (( $maxDownload > $globalDownMax )); then
+			globalDownMax=$maxDownload
+		fi
 
-	if (( $maxUpload > $globalUpMax )); then
-		globalUpMax=$maxUpload
-	fi
-
+		if (( $maxUpload > $globalUpMax )); then
+			globalUpMax=$maxUpload
+		fi
     done
 }
 
@@ -189,14 +202,15 @@ function calculateHeight {
 	local -n arr=$1
 	local -n heightArray=$2
 	local scale=$3
-	for (( i=0; i<${#arr[@]}; i++)); do
-		if [ $scale -eq 0 ]; then
+	local arrSize=${#arr[@]}
+
+	for (( i=0; i<$arrSize; i++ )); do
+		if (( $scale == 0 )); then
 			heightArray[$i]=0
 		else
 			heightArray[$i]=$(echo "${arr[$i]}/$scale" | bc) 
 		fi
-	done
-	echo 
+	done 
 }
 
 #print graph $1 - height array, $2 - scale, $3 - color
@@ -206,38 +220,37 @@ function drawGraph {
 	local color=$3
 	
 	echo -n -e ",\u2554"
-	for i in $(seq $width)
-	do
+	for (( i=1; i<=$width; i++ )); do
 		echo -n -e "\u2550"
 	done
 	echo -n -e "\u2557      \n"
 
 
 	#wlasciwy wykresik
-	for i in $(seq $(($height))); do
+	for (( i=1; i<=$height; i++ )); do
 		echo -n -e "$(echo $(format $(echo "$scale * ($height-$i+1)" | bc) '0')/s) ,\u2551"
-		for j in $(seq $widthGraph)
-		do
+		
+		for (( j=1; j<=$widthGraph; j++ )); do
 			if (( $(($height-$i)) < ${heightArray[$(($j-1))]} )); then
-			bar=""
-			for (( k=0; k<$barWidth; k++ )); do 
-				bar+="\u2588"
-			done
-			echo -n -e " ${color}$bar${normal}"
-		else
-			echo -n " "
-			for (( k=0; k<$barWidth; k++ )); do 
+				bar=""
+				for (( k=0; k<$barWidth; k++ )); do 
+					bar+="\u2588"
+				done
+				echo -n -e " ${color}$bar${normal}"
+			else
 				echo -n " "
-			done
-		fi
-
+				for (( k=0; k<$barWidth; k++ )); do 
+					echo -n " "
+				done
+			fi
 		done
+		
 		echo -n -e " \u2551       \n"
 	done
 	#--------------------
 
 	echo -n -e ",\u255A"
-	for i in $(seq $width); do
+	for (( i=1; i<=$width; i++ )); do
 		echo -n -e "\u2550"
 	done
 	echo -n -e "\u255D       \n"
@@ -251,7 +264,7 @@ while(true); do
 	tput cup 0 0
 	calculateSpeed
 	calculateAvgSpeed
-	uptimeAndBattery
+	uptimeBatteryLoadAvg
 
 	arrayShiftAppend downloadArray $download
 	arrayShiftAppend uploadArray $upload
