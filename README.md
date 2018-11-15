@@ -6,3 +6,5 @@ Rozwiązania [zadań](https://cs.pwr.edu.pl/zawada/akiso/) z kursu Architektura 
 ### Lista 2 ✔
 
 ### Lista 3 ✔
+
+### Lista 4 🚧
