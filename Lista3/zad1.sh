@@ -269,7 +269,7 @@ while(true); do
 	arrayShiftAppend downloadArray $download
 	arrayShiftAppend uploadArray $upload
 
-    calculateMax
+  calculateMax
 	downloadScale=$(calculateScale $maxDownload)
 	uploadScale=$(calculateScale $maxUpload)
 

@@ -25,6 +25,7 @@ while(sleep $interval); do
 	if [ -z "$( diff -q site tmp)" ]; then
 		echo "brak zmian"
    	else
+	   	git diff
 		git commit -am "zmiana" 
 		echo "zmiana"
 		zenity --info --text "$(echo -e "Zmiana na stronie\n$url")"
