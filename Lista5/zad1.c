@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 int myprintf(const char * format, ... ) {
   char * start_pointer = format;
@@ -21,13 +22,22 @@ int myprintf(const char * format, ... ) {
           break;
         }
         case 'd': {
-          int *d = ((int *)p);
-          char * d_char = d;
-          int len = strlen(d_char);
-          for (int i = 0; i < len; i++) {
-            write(1, &d_char[i] - '0', sizeof(char));
-          }
+          // ponizsze konwertowac na char
+          // int *d = ((int *)p);
           // write(1, d, sizeof(int)); // to drukuje znak z ASCII o numerze d
+          char * d = ((char*)p);
+          for (int i = 0; i < strlen(d); i++) {
+            int d_int = atoi(d[i]);
+            printf("%d", d_int);
+          }
+          printf("%s", d);
+          // int len = strlen(d);
+          // int d_int = &d;
+          // write(1, d_int-48, len);
+          // for (int i = 0; i < len; i++) {
+          //   // char d_i = d[i] - '0';
+          //   write(1, d+i-', 1);
+          // }
           p += sizeof (int);
 
           break;
