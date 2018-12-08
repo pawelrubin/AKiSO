@@ -6,7 +6,15 @@
 
 char * int_to_string(int number, int base) {
   int num_of_digits = 0;
-  int number_copy = number;
+  int number_copy;
+  int isNegative = 0;  
+  
+  if (number < 0) {
+    isNegative = 1;
+    number *= (-1);
+  }
+
+  number_copy = number;
 
   while(number_copy > 0) {
     number_copy /= base;
@@ -15,17 +23,21 @@ char * int_to_string(int number, int base) {
 
   number_copy = number;
 
-  char *result = malloc(num_of_digits * sizeof(char) + 1);
+  char *result = malloc((num_of_digits + 1 + isNegative) * sizeof(char));
+
+  if (isNegative) {
+    result[0] = '-';
+  }
 
   if (base <= 10) {
-    for(int i = (num_of_digits - 1); i >= 0; i--) {
+    for(int i = (num_of_digits - 1 + isNegative); i >= isNegative; i--) {
       result[i] = number_copy%base + '0';
       number_copy /= base;
     }
   } else {
     char digits[] = {'A', 'B', 'C', 'D', 'E', 'F'};
     int digit;
-    for(int i = (num_of_digits - 1); i >= 0; i--) {
+    for(int i = (num_of_digits - 1 + isNegative); i >= isNegative; i--) {
       digit = number_copy%base;
       if (digit < 10) {
         result[i] = digit + '0';
@@ -36,7 +48,7 @@ char * int_to_string(int number, int base) {
     }
   }
 
-  result[num_of_digits] = '\0';
+  result[num_of_digits + isNegative] = '\0';
 
   return result;
 }
