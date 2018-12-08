@@ -52,7 +52,6 @@ int ** malloc_matrix(int width, int height) {
   return matrix;
 }
 
-
 void transposition(int **matrix, int size) {
   for (int i = 0; i < size - 1; i++) {
     for (int k = i + 1; k < size; k++) {
