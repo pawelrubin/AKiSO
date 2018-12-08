@@ -124,7 +124,7 @@ char** split(char *string, char *delim) {
     result[idx] = NULL;
   }
 
-  dibadzer(result, maksLen);
+  // dibadzer(result, maksLen);
   return result;
 }
 
@@ -140,7 +140,7 @@ void commandLoop() {
     printf("%s", COLOR);
     nread = getline(&line, &len, stdin);
     
-    if (strcmp(line, "exit") == 0 || nread == -1) {
+    if (strcmp(line, "exit\n") == 0 || nread == -1) {
       exit(0);
     }
 
