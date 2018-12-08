@@ -4,13 +4,46 @@
 #include <string.h>
 #include <stdlib.h>
 
-int myprintf(const char * format, ... ) {
-  char * start_pointer = format;
-  int fd = 0;
-  char *buf;
-  // va_list args;
+char * int_to_string(int number, int base) {
+  int num_of_digits = 0;
+  int number_copy = number;
 
-  // va_start(args, format);
+  while(number_copy > 0) {
+    number_copy /= base;
+    num_of_digits++;
+  }
+
+  number_copy = number;
+
+  char *result = malloc(num_of_digits * sizeof(char) + 1);
+
+  if (base <= 10) {
+    for(int i = (num_of_digits - 1); i >= 0; i--) {
+      result[i] = number_copy%base + '0';
+      number_copy /= base;
+    }
+  } else {
+    char digits[] = {'A', 'B', 'C', 'D', 'E', 'F'};
+    int digit;
+    for(int i = (num_of_digits - 1); i >= 0; i--) {
+      digit = number_copy%base;
+      if (digit < 10) {
+        result[i] = digit + '0';
+      } else {
+        result[i] = digits[digit%10];
+      }
+      number_copy /= base;
+    }
+  }
+
+  result[num_of_digits] = '\0';
+
+  return result;
+}
+
+int myprintf(const char * format, ... ) {
+  int len = 0;;
+
   char *p = (char *) &format + sizeof format;
 
   while (*format) {
@@ -18,34 +51,33 @@ int myprintf(const char * format, ... ) {
       format++;
       switch(*format) {
         case 'x': {
-          
+          int *d = ((int *)p);
+          len += myprintf("%s", int_to_string(*d, 16));
+          p += sizeof(int);
           break;
         }
         case 'd': {
-          // ponizsze konwertowac na char
-          // int *d = ((int *)p);
-          // write(1, d, sizeof(int)); // to drukuje znak z ASCII o numerze d
-          char * d = ((char*)p);
-          for (int i = 0; i < strlen(d); i++) {
-            int d_int = atoi(d[i]);
-            printf("%d", d_int);
-          }
-          printf("%s", d);
-          // int len = strlen(d);
-          // int d_int = &d;
-          // write(1, d_int-48, len);
-          // for (int i = 0; i < len; i++) {
-          //   // char d_i = d[i] - '0';
-          //   write(1, d+i-', 1);
-          // }
-          p += sizeof (int);
-
+          int *d = ((int *)p);
+          len += myprintf("%s", int_to_string(*d, 10));
+          p += sizeof(int);
           break;
         }
         case 's': {
+          char *s = *((char **)p);
+
+          while(s[0] != '\0') {
+            write(1, s, sizeof(char));
+            s++;
+            len++;
+          }
+
+          p += sizeof(char*);
           break;
         }
         case 'b': {
+          int *d = ((int *)p);
+          len += myprintf("%s", int_to_string(*d, 2));
+          p += sizeof(int);
           break;
         }
       }
@@ -55,80 +87,25 @@ int myprintf(const char * format, ... ) {
       switch (*format) {
         case 'n': {
           write(1, "\n", 1);
+          len++;
           break;
         }
       }
       format++;
     } else {
       write(1, format, 1);
+      len++;
       format++;
     }
   }
 
   p = NULL;
 
-  return (format - start_pointer);
+  return len;
 }
 
-// int mysncanf(const char * format, ... ) {
-//   char * start_pointer = format;
-//   int fd = 0;
-//   char *buf;
-//   // va_list args;
-
-//   // va_start(args, format);
-//   char *p = (char *) &format + sizeof format;
-
-//   while (*format) {
-//     if (*format == '%') {
-//       format++;
-//       switch(*format) {
-//         case 'x': {
-          
-//           break;
-//         }
-//         case 'd': {
-//           int d = *((int *)p);
-//           // printf("%d",d);
-//           read(0, &d, 1);
-//           p += sizeof (int);
-
-//           break;
-//         }
-//         case 's': {
-//           break;
-//         }
-//         case 'b': {
-//           break;
-//         }
-//       }
-//       format++;
-//     } else if (*format == '\\') {
-//       format++;
-//       switch (*format) {
-//         case 'n': {
-//           read(0, "\n", 1);
-//           break;
-//         }
-//       }
-//       format++;
-//     } else {
-//       read(0, format, 1);
-//       format++;
-//     }
-//   }
-
-//   p = NULL;
-
-//   return (format - start_pointer);
-// }
-
 int main(int argc, char *argv[]) {
-  // int d;
-  // mysncanf("%d", d);
-  int d = 49;
-  printf("myprintf(\"Papaj mówi: %%d.\\n\", 0)\n");
-  myprintf("Papaj mowi: %d.\n", d);
-  // myprintf("\n");
+  int len = myprintf("%s %d %b %x %s\n", "hello world", 1234, 1234, 1234, "hello world");
+  myprintf("dlugosc powyzszego: %d (znak nowej linii uwzgledniony)\n", len);
   return 0;
 }
