@@ -30,12 +30,8 @@ int string_to_int(char *string, int base) {
     num_of_digits++;
     i++;
   }
-
-  // printf("%d\n", num_of_digits);
-  // printf("%s\n", string);
   
   for (int i = (num_of_digits - 1 + isNegative); i >= isNegative; i--) {
-    // printf("/ %c / ", string[i]);
     if (string[i] >= 'A' && string[i] <= 'F') {
       result += (string[i] - 'A' + 10) * power(base, num_of_digits - i + isNegative - 1);
     } else {
@@ -206,19 +202,7 @@ int myscanf(const char * format, ...) {
         }
       }
       format++;
-    } else if (*format == '\\') {
-      format++;
-      switch (*format) {
-        case 'n': {
-          write(1, "\n", 1);
-          len++;
-          break;
-        }
-      }
-      format++;
     } else {
-      write(1, format, 1);
-      len++;
       format++;
     }
   }
@@ -231,9 +215,8 @@ int myscanf(const char * format, ...) {
 
 int main(int argc, char *argv[]) {
   char *test;
-  
-  myscanf("%s", &test);
-  myprintf("%s\n", test);
-
+  int d, b, x;
+  myscanf("%s%d%b%x", &test, &d, &b, &x);
+  myprintf("\t%s\n\t%d\n\t%b\n\t%x\n", test, d, b, x);
   return 0;
 }
