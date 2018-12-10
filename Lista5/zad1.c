@@ -3,6 +3,48 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#define TRUE 1
+#define FALSE 0
+#define BUFFER_SIZE 1024
+
+int power(int a, int b) {
+  if (b == 0) {
+    return 1;
+  } else {
+    return a * power(a, b-1);
+  }
+}
+
+int string_to_int(char *string, int base) {
+  int isNegative = 0;
+  int num_of_digits = 0;
+  int result = 0;
+
+  if (string[0] == '-') {
+    isNegative = 1;
+  }
+
+  int i = isNegative;
+
+  while(string[i] != '\0' && string[i] != '\n') {
+    num_of_digits++;
+    i++;
+  }
+
+  // printf("%d\n", num_of_digits);
+  // printf("%s\n", string);
+  
+  for (int i = (num_of_digits - 1 + isNegative); i >= isNegative; i--) {
+    // printf("/ %c / ", string[i]);
+    if (string[i] >= 'A' && string[i] <= 'F') {
+      result += (string[i] - 'A' + 10) * power(base, num_of_digits - i + isNegative - 1);
+    } else {
+      result += (string[i] - '0') * power(base, num_of_digits - i + isNegative - 1);
+    }
+  }
+
+  return result * power(-1, isNegative);
+}
 
 char * int_to_string(int number, int base) {
   int num_of_digits = 0;
@@ -54,7 +96,7 @@ char * int_to_string(int number, int base) {
 }
 
 int myprintf(const char * format, ... ) {
-  int len = 0;;
+  int len = 0;
 
   char *p = (char *) &format + sizeof format;
 
@@ -116,8 +158,82 @@ int myprintf(const char * format, ... ) {
   return len;
 }
 
+int myscanf(const char * format, ...) {
+  int len = 0;;
+
+  char *p = (char *) &format + sizeof format;
+
+  while (*format) {
+    if (*format == '%') {
+      format++;
+      switch(*format) {
+        case 'x': {
+          int *d = (int*)(*(int*)p);
+          char *string = malloc(BUFFER_SIZE);
+          read(0, string, BUFFER_SIZE);
+          *d = string_to_int(string, 16);
+          p += sizeof(int*);
+          break;
+        }
+        case 'd': {
+          int *d = (int*)(*(int*)p);
+          char *string = malloc(BUFFER_SIZE);
+          read(0, string, BUFFER_SIZE);
+          *d = string_to_int(string, 10);
+          p += sizeof(int*);
+          break;
+        }
+        case 's': {
+          char **strArg = (char**) (*(char**) p);
+          char *string = malloc(BUFFER_SIZE);
+          read(0, string, BUFFER_SIZE);
+          
+          if (string[strlen(string) - 1] == '\n') {
+            string[strlen(string) - 1] = '\0';
+          }
+          *strArg = string;
+
+          p += sizeof(*strArg);
+          break;
+        }
+        case 'b': {
+          int *d = (int*)(*(int*)p);
+          char *string = malloc(BUFFER_SIZE);
+          read(0, string, BUFFER_SIZE);
+          *d = string_to_int(string, 2);
+          p += sizeof(int*);
+          break;
+        }
+      }
+      format++;
+    } else if (*format == '\\') {
+      format++;
+      switch (*format) {
+        case 'n': {
+          write(1, "\n", 1);
+          len++;
+          break;
+        }
+      }
+      format++;
+    } else {
+      write(1, format, 1);
+      len++;
+      format++;
+    }
+  }
+
+  p = NULL;
+
+  return len;
+}
+
+
 int main(int argc, char *argv[]) {
-  int len = myprintf("%s %d %b %x %s\n", "hello world", 1234, 1234, 1234, "hello world");
-  myprintf("dlugosc powyzszego: %d (znak nowej linii uwzgledniony)\n", len);
+  char *test;
+  
+  myscanf("%s", &test);
+  myprintf("%s\n", test);
+
   return 0;
 }
