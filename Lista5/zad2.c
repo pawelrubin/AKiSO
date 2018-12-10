@@ -15,21 +15,20 @@ typedef struct {
   int size;
 } Zad2Matrices;
 
-void *diagonal_boolean_matrix_multithread_multiplication(void *vargp) {
+void *squared_boolean_matrix_multithread_multiplication(void *vargp) {
   Zad2Matrices *matrix = (Zad2Matrices*)&vargp;
 
   for (int i = rows_calculated ; i < rows_calculated; rows_calculated++) {
     for (int j = 0; j < matrix->size; j++) {
       int value = 0;
       for (int k = 0; k < matrix->size; k++) {
-        value |= (matrix->matrix1[i][k] && matrix->matrix2[k][j]);
+        value |= (matrix->matrix1[i][k] & matrix->matrix2[k][j]);
         if (value) {
           break;
         }
       }
       matrix->result[i][j] = value;
     }
-
   }
 }
 
@@ -48,15 +47,6 @@ void random_fill_boolean_matrix(int **matrix, int width, int height) {
     for (int j = 0; j < width; j++) {
       matrix[i][j] = (rand()%2);
     }
-  }
-}
-
-void print_matrix(int **matrix, int width, int height) {
-  for (int i = 0; i < height; i++) {
-    for (int j = 0; j < width; j++) {
-      printf("{%d}", matrix[i][j]);
-    }
-    printf("\n");
   }
 }
 
@@ -82,7 +72,7 @@ int main(int argc, char *argv[]) {
   pthread_t ptIDs[num_of_threads];
 
   for (int i = 0; i < num_of_threads; i++) {
-    pthread_create(&ptIDs[i], NULL, diagonal_boolean_matrix_multithread_multiplication, (void *)&matrix);
+    pthread_create(&ptIDs[i], NULL, squared_boolean_matrix_multithread_multiplication, (void *)&matrix);
   }
 
   return 0;
