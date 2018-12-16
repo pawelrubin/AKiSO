@@ -1,5 +1,5 @@
 ## Zadanie 2
-#### Program należy kompilować z flagą -lpthred
+#### Program należy kompilować z flagą -lpthread
 
 ```Shell
 $ gcc zad2.c -lpthread
