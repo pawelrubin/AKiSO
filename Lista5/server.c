@@ -98,7 +98,7 @@ char * int_to_string(int number, int base) {
 
 void show_users(int socket) {
   int count = 1;
-  char *message = "\nConnected users:\n";
+  char *message = "\033[1m\nConnected users:\n";
   send(socket, message, strlen(message), 0);
   for (int j = 0; j < MAX_CLIENTS; j++) {
     if (server.clients.sockets[j] != 0) {
@@ -111,18 +111,17 @@ void show_users(int socket) {
         strcat(message, ". ");
         strcat(message, nickname);
         strcat(message, "\n");
-        send(socket, message, strlen(message), 0);
         count++;
       } else {
         message = int_to_string(count, 10);
         strcat(message, ". ");
         strcat(message, "You\n");
-        send(socket, message, strlen(message), 0);
         count++;
       }
+      send(socket, message, strlen(message), 0);
     }
   }
-  send(socket, "\n", strlen("\n"), 0);
+  send(socket, "\n\033[0m", strlen("\n\033[0m"), 0);
 }
 
 void user_connected_notification(int id) {
@@ -138,6 +137,37 @@ void user_connected_notification(int id) {
       send(socket, message, strlen(message), 0);
     }
   }
+}
+
+/*
+This function returns a socket for a given nickname
+if the nickname has been found, otherwise returns -1.
+*/
+int find_socket_by_nickname(char *nickname) {
+  for (int i = 0; i < MAX_CLIENTS; i++) {
+    if (strcmp(server.clients.nicknames[i], nickname) == 0) {
+      return server.clients.sockets[i];
+    }
+  }
+  free(nickname);
+  return -1;
+
+}
+
+char *first_word(char *buffer) {
+  int inputLength = strlen(buffer);
+  char *inputCopy = (char*) calloc(inputLength + 1, sizeof(char));
+  strncpy(inputCopy, buffer, inputLength);
+  char *word, *context;
+  word = strtok_r(inputCopy, " ", &context);
+  return word;
+}
+
+void send_to_user(int socket, char *from_user, char *message) {
+  send(socket, from_user, strlen(from_user), 0);
+  send(socket, ": ", strlen(": "), 0);
+  send(socket, message, strlen(message), 0);
+  send(socket, "\n", strlen("\n"), 0);
 }
 
 int main(int argc, char const *argv[]) { 
@@ -241,18 +271,23 @@ int main(int argc, char const *argv[]) {
             }
           }
         } else {
-          // printf("wiadomosc od klienta nr %d: %s", i, buffer);
           buffer[len - 2] = '\0';
           printf("wiadomosc od <%s>: <%s>\n", server.clients.nicknames[i], buffer);
-          // buffer[len-1] = '\0';
-          for (int j = 0; j < MAX_CLIENTS; j++) {
-            if (j != i) {
-              int a_socket = server.clients.sockets[j];
-              if (a_socket != 0) {              
-                send(a_socket, server.clients.nicknames[i], strlen(server.clients.nicknames[i]), 0);
-                send(a_socket, ": ", strlen(": "), 0);
-                send(a_socket, buffer, strlen(buffer), 0);
-                send(a_socket, "\n", strlen("\n"), 0);
+          printf("pierwsze slowo to: <%s>\n", first_word(buffer));
+          int target_socket;
+          char *firstWord = first_word(buffer);
+          if ((target_socket = find_socket_by_nickname(firstWord)) > -1) {
+            send_to_user(target_socket, server.clients.nicknames[i], buffer + strlen(firstWord));
+          } else {
+            for (int j = 0; j < MAX_CLIENTS; j++) {
+              if (j != i) {
+                int a_socket = server.clients.sockets[j];
+                if (a_socket != 0) {              
+                  send(a_socket, server.clients.nicknames[i], strlen(server.clients.nicknames[i]), 0);
+                  send(a_socket, ": ", strlen(": "), 0);
+                  send(a_socket, buffer, strlen(buffer), 0);
+                  send(a_socket, "\n", strlen("\n"), 0);
+                }
               }
             }
           }
