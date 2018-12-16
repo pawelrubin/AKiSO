@@ -4,7 +4,7 @@
 ```Shell
 $ gcc zad1.c -m32
 ```
-##### Uwaga
+##### Uwaga Arek Dębski
 W niektórych przypadkach należy zainstalować pakiet gcc-multilib.
 
 ## Zadanie 2
