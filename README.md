@@ -15,7 +15,7 @@ Rozwiązania [zadań](https://cs.pwr.edu.pl/zawada/akiso/) z kursu Architektura 
 ### Lista 4 ✔
 - Uruchamianie powłoki Bash z prawami roota (program w C).
 - Prosta wersja powłoki - lsh.
-### Lista 5 🚧
+### Lista 5 ✔
 - Implementacje funkcji printf i scanf z użyciem wywołań systemowych.
 - Wielowątkowe mnożenie macierzy boolowskich.
 - Komunikator internetowy wykorzystujący wywołanie systemowe select oraz gniazda.
