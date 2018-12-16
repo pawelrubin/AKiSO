@@ -222,11 +222,11 @@ int main(int argc, char const *argv[]) {
       // welcome message
       char *message = "\n*************\n ELO MORDZIU\n*************\nPodaj nick: ";
       send(server.new_socket, message, strlen(message), 0);
+      puts("WELCOME MESSAGE HAS BEEN SEND. POZDRO.");
       
       // reading nickname
       int len = read(server.new_socket, nick, sizeof(nick));
       nick[len-2] = '\0';
-      puts("WELCOME MESSAGE HAS BEEN SEND. POZDRO.");
 
       for (int i = 0; i < MAX_CLIENTS; i++) {
         if (server.clients.sockets[i] == 0) {
@@ -272,21 +272,20 @@ int main(int argc, char const *argv[]) {
           }
         } else {
           buffer[len - 2] = '\0';
-          printf("wiadomosc od <%s>: <%s>\n", server.clients.nicknames[i], buffer);
-          printf("pierwsze slowo to: <%s>\n", first_word(buffer));
           int target_socket;
-          char *firstWord = first_word(buffer);
-          if ((target_socket = find_socket_by_nickname(firstWord)) > -1) {
-            send_to_user(target_socket, server.clients.nicknames[i], buffer + strlen(firstWord));
+          char *nickname = first_word(buffer);
+          if ((target_socket = find_socket_by_nickname(nickname)) > -1) {
+            printf("wiadomosc od <%s> do <%s>: <%s>\n", server.clients.nicknames[i], nickname, buffer + strlen(nickname) + 1);
+            send_to_user(target_socket, server.clients.nicknames[i], buffer + strlen(nickname) + 1);
+          } else if (strcmp(nickname, "users")) {
+            show_users(server.clients.sockets[i]);
           } else {
             for (int j = 0; j < MAX_CLIENTS; j++) {
               if (j != i) {
                 int a_socket = server.clients.sockets[j];
-                if (a_socket != 0) {              
-                  send(a_socket, server.clients.nicknames[i], strlen(server.clients.nicknames[i]), 0);
-                  send(a_socket, ": ", strlen(": "), 0);
-                  send(a_socket, buffer, strlen(buffer), 0);
-                  send(a_socket, "\n", strlen("\n"), 0);
+                if (a_socket != 0) {
+                  send_to_user(a_socket, server.clients.nicknames[i], buffer);
+                  printf("wiadomosc od <%s> do wszystkich: <%s>\n", server.clients.nicknames[i], buffer);
                 }
               }
             }
