@@ -17,8 +17,8 @@ Rozwiązania [zadań](https://cs.pwr.edu.pl/zawada/akiso/) z kursu Architektura 
 - Prosta wersja powłoki - lsh.
 ### Lista 5 🚧
 - Implementacje funkcji printf i scanf z użyciem wywołań systemowych.
-- Wielowątkowe mnożenie macierzey boolowskich.
+- Wielowątkowe mnożenie macierzy boolowskich.
 - Komunikator internetowy wykorzystujący wywołanie systemowe select oraz gniazda.
-- Mnożenie macierzy.
+- Mnożenie macierzy zoptymalizowane pod pamięć cache procesora.
 - Systemy plikow FAT i VFAT.
 - Program szyfrujący dane na dysku, wykorzystujący FUSE. (Uproszczona wersja programu EncFS).
