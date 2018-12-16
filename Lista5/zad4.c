@@ -95,23 +95,17 @@ void diagonal_matrix_multiplication_with_transposition(int **matrix1, int **matr
 }
 
 void diagonal_matrix_loop_nest_multiplication_with_transposition(int **matrix1, int **matrix2, int size, int **result) {
-  // int **transposed = malloc_matrix(size, size);
-  // transpose_matrix(matrix2, size, transposed);
-  int ac00, ac01, ac10, ac11;
+  int **transposed = malloc_matrix(size, size);
+  transpose_matrix(matrix2, size, transposed);
 
-  for (int i = 0; i < size; i += 2) {
-    for (int j = 0; j < size; j += 2) {
-      ac00 = ac01 = ac10 = ac11 = 0;
-      for (int k = 0; k < size; k++) {
-        ac00 += matrix2[k][j + 0] * matrix1[i + 0][k];
-        ac01 += matrix2[k][j + 1] * matrix1[i + 0][k];
-        ac10 += matrix2[k][j + 0] * matrix1[i + 1][k];
-        ac11 += matrix2[k][j + 1] * matrix1[i + 1][k];
+  int ib=8;
+  for (int ii = 0; ii < size; ii += ib) {
+    for (int j=0; j < size; j++) {
+      for (int i = ii; i < ii + ib; i++ ) {
+        for (int k = 0; k < size; k++) {
+        result[i][j] += matrix1[i][k] * transposed[j][k];
+        }
       }
-      result[i + 0][j + 0] = ac00;
-      result[i + 0][j + 1] = ac01;
-      result[i + 1][j + 0] = ac10;
-      result[i + 1][j + 1] = ac11;
     }
   }
 }
@@ -187,7 +181,7 @@ int main(int argc, char *argv[]) {
   // allocating memory for product matrix and filling with zeros  
   int **product_matrix = malloc_matrix(matrix_size, matrix_size);
   zero_fill_matrix(product_matrix, matrix_size, matrix_size);
-
+  
   multiply_and_show_time(matrix1, matrix2, matrix_size, product_matrix);
   trans_multiply_and_show_time(matrix1, matrix2, matrix_size, product_matrix);
   nest_multiply_and_show_time(matrix1,matrix2,matrix_size,product_matrix);
