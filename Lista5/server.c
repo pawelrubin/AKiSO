@@ -155,12 +155,16 @@ int find_socket_by_nickname(char *nickname) {
 }
 
 char *first_word(char *buffer) {
-  int inputLength = strlen(buffer);
-  char *inputCopy = (char*) calloc(inputLength + 1, sizeof(char));
-  strncpy(inputCopy, buffer, inputLength);
-  char *word, *context;
-  word = strtok_r(inputCopy, " ", &context);
-  return word;
+  if (strlen(buffer) > 0) {
+    int inputLength = strlen(buffer);
+    char *inputCopy = (char*) calloc(inputLength + 1, sizeof(char));
+    strncpy(inputCopy, buffer, inputLength);
+    char *word, *context;
+    word = strtok_r(inputCopy, " ", &context);
+    return word;
+  } else {
+    return "";
+  }
 }
 
 void send_to_user(int socket, char *from_user, char *message) {
@@ -226,8 +230,9 @@ int main(int argc, char const *argv[]) {
       
       // reading nickname
       int len = read(server.new_socket, nick, sizeof(nick));
-      nick[len-2] = '\0';
-
+      if (len > 0) {
+        nick[len-2] = '\0';
+      }
       for (int i = 0; i < MAX_CLIENTS; i++) {
         if (server.clients.sockets[i] == 0) {
           server.clients.sockets[i] = server.new_socket;
@@ -271,13 +276,16 @@ int main(int argc, char const *argv[]) {
             }
           }
         } else {
-          buffer[len - 2] = '\0';
+          // if (len > 0) {
+            buffer[len - 2] = '\0';
+          // }
           int target_socket;
           char *nickname = first_word(buffer);
+          printf("Pierwsze slowo: <%s>\n", nickname);
           if ((target_socket = find_socket_by_nickname(nickname)) > -1) {
             printf("wiadomosc od <%s> do <%s>: <%s>\n", server.clients.nicknames[i], nickname, buffer + strlen(nickname) + 1);
             send_to_user(target_socket, server.clients.nicknames[i], buffer + strlen(nickname) + 1);
-          } else if (strcmp(nickname, "users")) {
+          } else if ( strcmp("users", buffer) == 0 ) {
             show_users(server.clients.sockets[i]);
           } else {
             for (int j = 0; j < MAX_CLIENTS; j++) {
