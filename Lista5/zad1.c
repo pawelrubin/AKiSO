@@ -216,7 +216,17 @@ int myscanf(const char * format, ...) {
 int main(int argc, char *argv[]) {
   char *test;
   int d, b, x;
-  myscanf("%s%d%b%x", &test, &d, &b, &x);
-  myprintf("\t%s\n\t%d\n\t%b\n\t%x\n", test, d, b, x);
+  myprintf("Enter string: ");
+  myscanf("%s", &test);
+  myprintf("Enter decimal number: ");
+  myscanf("%d", &d);
+  myprintf("Enter binary number: ");
+  myscanf("%b", &b);
+  myprintf("Enter hex number: ");
+  myscanf("%x", &x);
+  myprintf("Your string: %s\n", test);
+  myprintf("First number: dec: %d, bin: %b, hex: %x\n", d, d, d);
+  myprintf("Second number: bin: %b, hex: %x, dec: %d\n", b, b, b);
+  myprintf("Third number: hex: %x, dec: %d, bin: %b\n", x, x, x);
   return 0;
 }
