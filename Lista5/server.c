@@ -21,7 +21,6 @@ typedef struct {
 
 typedef struct {
   Clients clients;
-  // int sockets[MAX_CLIENTS];
   int master_socket;
   int opt;
   struct sockaddr_in address;
@@ -36,13 +35,17 @@ typedef struct {
 
 // Globally accesible structure of data
 Server server;
+char buffer[BUFFER_SIZE];
+char nick[30];
 
+/* Initialiase all elements of an array to zero. */
 void initialise_all_to_0(int *array, int size) {
   for (int i = 0; i < size; i++) {
     array[i] = 0;
   }
 }
 
+/* Converts int to string representation in given base. */
 char * int_to_string(int number, int base) {
   int num_of_digits = 0;
   int number_copy;
@@ -96,6 +99,10 @@ char * int_to_string(int number, int base) {
   return result;
 }
 
+/* 
+Sends message with a list of all connected 
+to a user of a given socket.
+*/
 void show_users(int socket) {
   int count = 1;
   char *message = "\033[1m\nConnected users:\n";
@@ -124,6 +131,7 @@ void show_users(int socket) {
   send(socket, "\n\033[0m", strlen("\n\033[0m"), 0);
 }
 
+/* Sends message to all users about the new client connection of given id*/
 void user_connected_notification(int id) {
   char *new_user_nickname = server.clients.nicknames[id];
 
@@ -154,6 +162,9 @@ int find_socket_by_nickname(char *nickname) {
 
 }
 
+/*
+Return first word in given string.
+*/
 char *first_word(char *buffer) {
   if (strlen(buffer) > 0) {
     int inputLength = strlen(buffer);
@@ -167,6 +178,9 @@ char *first_word(char *buffer) {
   }
 }
 
+/*
+Sends a message to user of given socket.
+*/
 void send_to_user(int socket, char *from_user, char *message) {
   send(socket, from_user, strlen(from_user), 0);
   send(socket, ": ", strlen(": "), 0);
@@ -174,11 +188,10 @@ void send_to_user(int socket, char *from_user, char *message) {
   send(socket, "\n", strlen("\n"), 0);
 }
 
-int main(int argc, char const *argv[]) { 
-  
-  char buffer[BUFFER_SIZE];
-  char nick[30];
-  int started[MAX_CLIENTS];
+/*
+Sets server properties
+*/
+void prepare_server() {
   server.opt = TRUE;
   server.master_socket = socket(AF_INET, SOCK_STREAM, 0);
   server.address.sin_family = AF_INET;   
@@ -196,111 +209,130 @@ int main(int argc, char const *argv[]) {
   listen(server.master_socket, 3);
 
   puts("Waiting for connections");
+}
 
-  while (TRUE) {
-    FD_ZERO(&server.readfds);
+/* Sets files descriptors */
+void set_FD_SETS() {
+  FD_ZERO(&server.readfds);
 
-    FD_SET(server.master_socket, &server.readfds);
-    FD_SET(server.master_socket, &server.writefds);
-    server.max_sd = server.master_socket;
+  FD_SET(server.master_socket, &server.readfds);
+  FD_SET(server.master_socket, &server.writefds);
+  server.max_sd = server.master_socket;
 
-    for (int i = 0; i < MAX_CLIENTS; i++) {
+  for (int i = 0; i < MAX_CLIENTS; i++) {
 
-      server.sd = server.clients.sockets[i];
-      //if valid socket descriptor then add to read list  
-      if(server.sd > 0)   
-        FD_SET(server.sd, &server.readfds);   
-            
-      //highest file descriptor number, need it for the select function  
-      if (server.sd > server.max_sd)   
-        server.max_sd = server.sd;   
-    }
-
-    select(server.max_sd + 1, &server.readfds, &server.writefds, NULL, NULL);
-
-    if (FD_ISSET(server.master_socket, &server.readfds)) {
-      server.new_socket = accept(server.master_socket, (struct sockaddr *)&server.address,(socklen_t*)&server.addr_len);
-      printf("New connection , socket fd is %d , ip is : %s , port : %d\n",
-        server.new_socket, inet_ntoa(server.address.sin_addr), ntohs(server.address.sin_port));
-      
-      // welcome message
-      char *message = "\n*************\n ELO MORDZIU\n*************\nPodaj nick: ";
-      send(server.new_socket, message, strlen(message), 0);
-      puts("WELCOME MESSAGE HAS BEEN SEND. POZDRO.");
-      
-      // reading nickname
-      int len = read(server.new_socket, nick, sizeof(nick));
-      if (len > 0) {
-        nick[len-2] = '\0';
-      }
-      for (int i = 0; i < MAX_CLIENTS; i++) {
-        if (server.clients.sockets[i] == 0) {
-          server.clients.sockets[i] = server.new_socket;
-          strncpy(server.clients.nicknames[i], nick, sizeof(server.clients.nicknames[i]));
-          printf("Adding to list of sockets as %d\n" , i);
-          printf("nickname is : <%s>\n", server.clients.nicknames[i]);
+    server.sd = server.clients.sockets[i];
+    //if valid socket descriptor then add to read list  
+    if(server.sd > 0)   
+      FD_SET(server.sd, &server.readfds);   
           
-          char greet[50];
-          strcpy(greet, "Welcome ");
-          strcat(greet, nick);
-          strcat(greet, "\n");
-          send(server.clients.sockets[i], greet, strlen(greet), 0);
+    //highest file descriptor number, need it for the select function  
+    if (server.sd > server.max_sd)   
+      server.max_sd = server.sd;   
+  }
 
-          user_connected_notification(i);
-          show_users(server.clients.sockets[i]); 
+  select(server.max_sd + 1, &server.readfds, &server.writefds, NULL, NULL);
+}
 
-          break;
-        }
-      }
-
-      
+/* Handles new clients, sets nickname*/
+void handle_new_connections() {
+  if (FD_ISSET(server.master_socket, &server.readfds)) {
+    server.new_socket = accept(server.master_socket, (struct sockaddr *)&server.address,(socklen_t*)&server.addr_len);
+    printf("New connection , socket fd is %d , ip is : %s , port : %d\n",
+      server.new_socket, inet_ntoa(server.address.sin_addr), ntohs(server.address.sin_port));
+    
+    // welcome message
+    char *message = "\n*************\n ELO MORDZIU\n*************\nPodaj nick: ";
+    send(server.new_socket, message, strlen(message), 0);
+    puts("WELCOME MESSAGE HAS BEEN SEND. POZDRO.");
+    
+    // reading nickname
+    int len = read(server.new_socket, nick, sizeof(nick));
+    if (len > 0) {
+      nick[len-2] = '\0';
     }
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+      if (server.clients.sockets[i] == 0) {
+        server.clients.sockets[i] = server.new_socket;
+        strncpy(server.clients.nicknames[i], nick, sizeof(server.clients.nicknames[i]));
+        printf("Adding to list of sockets as %d\n" , i);
+        printf("nickname is : <%s>\n", server.clients.nicknames[i]);
+        
+        char greet[50];
+        strcpy(greet, "Welcome ");
+        strcat(greet, nick);
+        strcat(greet, "\n");
+        send(server.clients.sockets[i], greet, strlen(greet), 0);
 
-    for (int i = 0; i < MAX_CLIENTS; i++) {   
-      server.sd = server.clients.sockets[i];   
-            
-      if (FD_ISSET(server.sd, &server.readfds)) {
-        int len;
-        if ((len = recv(server.sd, buffer, sizeof(buffer), 0)) == 0) {   
-            getpeername(server.sd, (struct sockaddr*)&server.address,(socklen_t*)&server.addr_len);   
-            printf("Host disconnected , ip %s , port %d \n", inet_ntoa(server.address.sin_addr), ntohs(server.address.sin_port));   
-            close(server.sd);   
-            server.clients.sockets[i] = 0;
-            for (int j = 0; j < MAX_CLIENTS; j++) {
+        user_connected_notification(i);
+        show_users(server.clients.sockets[i]); 
+
+        break;
+      }
+    }      
+  }
+}
+
+/* Handles messages and prompt if a user disconnects */
+void handle_messages() {
+  for (int i = 0; i < MAX_CLIENTS; i++) {   
+    server.sd = server.clients.sockets[i];   
+          
+    if (FD_ISSET(server.sd, &server.readfds)) {
+      int len;
+      if ((len = recv(server.sd, buffer, sizeof(buffer), 0)) == 0) {   
+          getpeername(server.sd, (struct sockaddr*)&server.address,(socklen_t*)&server.addr_len);   
+          printf("Host disconnected , ip %s , port %d \n", inet_ntoa(server.address.sin_addr), ntohs(server.address.sin_port));   
+          close(server.sd);   
+          server.clients.sockets[i] = 0;
+          for (int j = 0; j < MAX_CLIENTS; j++) {
+          if (j != i) {
+            int a_socket = server.clients.sockets[j];
+            char *client = server.clients.nicknames[i];
+            char *dis = " disconnected\n";
+            send(a_socket, client, strlen(client), 0);
+            send(a_socket, dis, strlen(dis), 0);
+          }
+        }
+      } else {
+        // if (len > 0) {
+          buffer[len - 2] = '\0';
+        // }
+        int target_socket;
+        char *nickname = first_word(buffer);
+        printf("Pierwsze slowo: <%s>\n", nickname);
+        if ((target_socket = find_socket_by_nickname(nickname)) > -1) {
+          printf("wiadomosc od <%s> do <%s>: <%s>\n", server.clients.nicknames[i], nickname, buffer + strlen(nickname) + 1);
+          send_to_user(target_socket, server.clients.nicknames[i], buffer + strlen(nickname) + 1);
+        } else if ( strcmp("users", buffer) == 0 ) {
+          show_users(server.clients.sockets[i]);
+        } else {
+          for (int j = 0; j < MAX_CLIENTS; j++) {
             if (j != i) {
               int a_socket = server.clients.sockets[j];
-              char *client = server.clients.nicknames[i];
-              char *dis = " disconnected\n";
-              send(a_socket, client, strlen(client), 0);
-              send(a_socket, dis, strlen(dis), 0);
-            }
-          }
-        } else {
-          // if (len > 0) {
-            buffer[len - 2] = '\0';
-          // }
-          int target_socket;
-          char *nickname = first_word(buffer);
-          printf("Pierwsze slowo: <%s>\n", nickname);
-          if ((target_socket = find_socket_by_nickname(nickname)) > -1) {
-            printf("wiadomosc od <%s> do <%s>: <%s>\n", server.clients.nicknames[i], nickname, buffer + strlen(nickname) + 1);
-            send_to_user(target_socket, server.clients.nicknames[i], buffer + strlen(nickname) + 1);
-          } else if ( strcmp("users", buffer) == 0 ) {
-            show_users(server.clients.sockets[i]);
-          } else {
-            for (int j = 0; j < MAX_CLIENTS; j++) {
-              if (j != i) {
-                int a_socket = server.clients.sockets[j];
-                if (a_socket != 0) {
-                  send_to_user(a_socket, server.clients.nicknames[i], buffer);
-                  printf("wiadomosc od <%s> do wszystkich: <%s>\n", server.clients.nicknames[i], buffer);
-                }
+              if (a_socket != 0) {
+                send_to_user(a_socket, server.clients.nicknames[i], buffer);
+                printf("wiadomosc od <%s> do wszystkich: <%s>\n", server.clients.nicknames[i], buffer);
               }
             }
           }
         }
-      } 
-    }
+      }
+    } 
+  }
+}
+
+int main(int argc, char const *argv[]) { 
+
+  prepare_server();
+
+  while (TRUE) {
+    
+    set_FD_SETS();
+
+    handle_new_connections();
+
+    handle_messages();
   }
 
   return 0;
