@@ -20,3 +20,10 @@ $ gcc zad2.c -lpthread
 ```Shell
 $ telnet localhost 8888
 ```
+
+## Zadanie 4
+#### Kompilowanie z flagami -O3 i -g znacząco przyspiesza działanie (sprawdź sam xD)
+
+```Shell
+$ gcc zad4.c -O3 -g
+```
