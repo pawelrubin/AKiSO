@@ -21,4 +21,3 @@ Rozwiązania [zadań](https://cs.pwr.edu.pl/zawada/akiso/) z kursu Architektura 
 - Komunikator internetowy wykorzystujący wywołanie systemowe select oraz gniazda.
 - Mnożenie macierzy zoptymalizowane pod pamięć cache procesora.
 - Systemy plikow FAT i VFAT.
-- Program szyfrujący dane na dysku, wykorzystujący FUSE. (Uproszczona wersja programu EncFS).
